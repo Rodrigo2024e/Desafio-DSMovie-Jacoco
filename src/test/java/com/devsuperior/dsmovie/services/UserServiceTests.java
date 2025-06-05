@@ -27,82 +27,70 @@ import com.devsuperior.dsmovie.utils.CustomUserUtil;
 @ContextConfiguration
 public class UserServiceTests {
 
-	@InjectMocks
-	private UserService service;
-	
-	@Mock
-	private UserRepository repository;
-	
-	@Mock
-	private CustomUserUtil customUserUtil;
-	
-	private String existingUsername, nonExistingUsername;
-	private UserEntity user;
-	private List<UserDetailsProjection> userDetails;
+	   @InjectMocks
+	    private UserService service;
 
-	
-	@BeforeEach
-	void setUp() throws Exception {
-		existingUsername = "maria@gmail.com";
-		nonExistingUsername = "user@gmail.com";
-		
-		user = UserFactory.createUserEntity();
-		userDetails = UserDetailsFactory.createCustomAdminUser(existingUsername);
-		
-		Mockito.when(repository.searchUserAndRolesByUsername(existingUsername)).thenReturn(userDetails);
-		Mockito.when(repository.searchUserAndRolesByUsername(nonExistingUsername)).thenReturn(new ArrayList<>());
-		
-		Mockito.when(repository.findByUsername(existingUsername)).thenReturn(Optional.of(user));
-		Mockito.when(repository.findByUsername(nonExistingUsername)).thenReturn(Optional.empty());
-	
-	}
-	
+	    @Mock
+	    private UserRepository repository;
 
-	@Test
-	public void authenticatedShouldReturnUserEntityWhenUserExists() {
-		
-		UserService spyUserService = Mockito.spy(service);
-		Mockito.doReturn(user).when(spyUserService).authenticated();
-		
-		UserEntity result = spyUserService.authenticated();
-		
-		Assertions.assertNotNull(result);
-		Assertions.assertEquals(result.getUsername(), existingUsername);	
-		
-	}
-	
+	    @Mock
+	    private CustomUserUtil customUserUtil;
 
-	@Test
-	public void authenticatedShouldThrowUsernameNotFoundExceptionWhenUserDoesNotExists() {
-		
-		UserService spyUserService = Mockito.spy(service);
-		Mockito.doThrow(UsernameNotFoundException.class).when(spyUserService).authenticated();
-		
-		Assertions.assertThrows(UsernameNotFoundException.class, () -> {
-			
-			@SuppressWarnings("unused")
-			UserEntity result =spyUserService.authenticated();
-		});
-		
-	}
+	    private String existingUsername, nonExistingUsername;
+	    private UserEntity user;
+	    private List<UserDetailsProjection> userDetails;
 
-	
-	@Test
-	public void loadUserByUsernameShouldReturnUserDetailsWhenUserExists() {
-		
-		UserDetails result = service.loadUserByUsername(existingUsername);
-		
-		Assertions.assertNotNull(result);
-		Assertions.assertEquals(result.getUsername(), existingUsername);
-	}
-	
-	
-	@Test
-	public void loadUserByUsernameShouldThrowUsernameNotFoundExceptionWhenUserDoesNotExists() {
-		
-		Assertions.assertThrows(UsernameNotFoundException.class, () -> {
-			service.loadUserByUsername(nonExistingUsername);
-		});
-	}
+	    @BeforeEach
+	    void setUp() throws Exception {
+	        existingUsername = "maria@gmail.com";
+	        nonExistingUsername = "user@gmail.com";
 
+	        user = UserFactory.createUserEntity();
+	        user.setUsername(existingUsername);
+	        userDetails = UserDetailsFactory.createCustomAdminUser(existingUsername);
+
+	        // Mock: authenticated()
+	        Mockito.when(customUserUtil.getLoggedUsername()).thenReturn(existingUsername);
+	        Mockito.when(repository.findByUsername(existingUsername)).thenReturn(Optional.of(user));
+	        Mockito.when(repository.findByUsername(nonExistingUsername)).thenReturn(Optional.empty());
+
+	        // Mock: loadUserByUsername()
+	        Mockito.when(repository.searchUserAndRolesByUsername(existingUsername)).thenReturn(userDetails);
+	        Mockito.when(repository.searchUserAndRolesByUsername(nonExistingUsername)).thenReturn(new ArrayList<>());
+	    }
+
+	    @Test
+	    public void authenticatedShouldReturnUserEntityWhenUserExists() {
+	        UserEntity result = service.authenticated();
+
+	        Assertions.assertNotNull(result);
+	        Assertions.assertEquals(existingUsername, result.getUsername());
+	    }
+
+	    @Test
+	    public void authenticatedShouldThrowUsernameNotFoundExceptionWhenUserDoesNotExist() {
+	     
+	        Mockito.when(customUserUtil.getLoggedUsername()).thenReturn(nonExistingUsername);
+
+	        Assertions.assertThrows(UsernameNotFoundException.class, () -> {
+	            service.authenticated();
+	        });
+	    }
+
+	    @Test
+	    public void loadUserByUsernameShouldReturnUserDetailsWhenUserExists() {
+	        UserDetails result = service.loadUserByUsername(existingUsername);
+
+	        Assertions.assertNotNull(result);
+	        Assertions.assertEquals(existingUsername, result.getUsername());
+	    }
+
+	    @Test
+	    public void loadUserByUsernameShouldThrowUsernameNotFoundExceptionWhenUserDoesNotExist() {
+	        Assertions.assertThrows(UsernameNotFoundException.class, () -> {
+	            service.loadUserByUsername(nonExistingUsername);
+	        });
+	    }
 }
+
+

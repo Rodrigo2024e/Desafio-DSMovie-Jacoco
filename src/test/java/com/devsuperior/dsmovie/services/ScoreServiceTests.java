@@ -16,6 +16,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.devsuperior.dsmovie.dto.MovieDTO;
 import com.devsuperior.dsmovie.dto.ScoreDTO;
 import com.devsuperior.dsmovie.entities.MovieEntity;
+import com.devsuperior.dsmovie.entities.ScoreEntity;
 import com.devsuperior.dsmovie.entities.UserEntity;
 import com.devsuperior.dsmovie.repositories.MovieRepository;
 import com.devsuperior.dsmovie.repositories.ScoreRepository;
@@ -70,17 +71,28 @@ public class ScoreServiceTests {
 
 	    @Test
 	    public void saveScoreShouldReturnMovieDTO() {
-	        // Arrange
+	    	   // Arrange
 	        scoreDTO = ScoreFactory.createScoreDTO();
 	        scoreDTO.setMovieId(existingMovieId);
+
+	        movie = MovieFactory.createMovieEntity();
 	        movie.setId(scoreDTO.getMovieId());
+
 	        client = UserFactory.createUserEntity();
+
+	        // Simula um score na lista do filme
+	        ScoreEntity score = new ScoreEntity();
+	        score.setMovie(movie);
+	        score.setUser(client);
+	        score.setValue(scoreDTO.getScore());
+
+	        movie.getScores().add(score); 
 
 	        Mockito.when(userService.authenticated()).thenReturn(client);
 	        Mockito.when(movieRepository.findById(scoreDTO.getMovieId()))
 	               .thenReturn(Optional.of(movie));
 	        Mockito.when(movieRepository.save(any())).thenReturn(movie);
-	        Mockito.when(scoreRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0)); // Mocka o saveAndFlush
+	        Mockito.when(scoreRepository.saveAndFlush(any())).thenReturn(score);
 
 	        // Act
 	        MovieDTO result = service.saveScore(scoreDTO);
@@ -89,6 +101,8 @@ public class ScoreServiceTests {
 	        Assertions.assertNotNull(result);
 	        Assertions.assertEquals(scoreDTO.getMovieId(), result.getId());
 	        Assertions.assertEquals(movie.getTitle(), result.getTitle());
+	        Assertions.assertEquals(score.getValue(), movie.getScore()); 
+	        Assertions.assertEquals(1, movie.getCount()); 
 	    }
 
 	    @Test
